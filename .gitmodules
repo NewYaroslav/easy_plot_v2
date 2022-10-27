@@ -1,0 +1,15 @@
+[submodule "lib/imgui-sfml"]
+	path = lib/imgui-sfml
+	url = https://github.com/eliasdaler/imgui-sfml.git
+[submodule "lib/ImGui-Addons"]
+	path = lib/ImGui-Addons
+	url = https://github.com/gallickgunner/ImGui-Addons.git
+[submodule "lib/imgui"]
+	path = lib/imgui
+	url = https://github.com/ocornut/imgui.git
+[submodule "lib/json"]
+	path = lib/json
+	url = https://github.com/nlohmann/json.git
+[submodule "lib/implot"]
+	path = lib/implot
+	url = https://github.com/epezent/implot.git

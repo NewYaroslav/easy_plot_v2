@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="ep2-viewer" />
+		<Option pch_mode="2" />
+		<Option compiler="mingw_64_7_3_0" />
+		<Build>
+			<Target title="Release">
+				<Option output="ep2-viewer" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Release/" />
+				<Option type="1" />
+				<Option compiler="mingw_64_7_3_0" />
+				<Compiler>
+					<Add option="-O2" />
+					<Add option="-std=c++11" />
+					<Add option="-DSFML_STATIC" />
+					<Add directory="../../lib/imgui" />
+					<Add directory="../../lib/imgui-sfml" />
+					<Add directory="../../lib/SFML-2.5.1-windows-gcc-7.3.0-mingw-64-bit/SFML-2.5.1/include" />
+					<Add directory="../../lib/ImGui-Addons" />
+					<Add directory="../../lib/ImGui-Addons/FileBrowser" />
+					<Add directory="../../lib/json/include" />
+					<Add directory="../../lib/implot" />
+					<Add directory="../../include" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+					<Add option="-static-libstdc++" />
+					<Add option="-static-libgcc" />
+					<Add option="-static" />
+					<Add library="sfml-window-s" />
+					<Add library="sfml-graphics-s" />
+					<Add library="sfml-audio-s" />
+					<Add library="sfml-system-s" />
+					<Add library="opengl32" />
+					<Add library="winmm" />
+					<Add library="gdi32" />
+					<Add library="gomp" />
+					<Add library="Imm32" />
+					<Add directory="../../lib/imgui" />
+					<Add directory="../../lib/imgui-sfml" />
+					<Add directory="../../lib/SFML-2.5.1-windows-gcc-7.3.0-mingw-64-bit/SFML-2.5.1/lib" />
+					<Add directory="../../lib/ImGui-Addons" />
+					<Add directory="../../lib/ImGui-Addons/FileBrowser" />
+					<Add directory="../../lib/json/include" />
+					<Add directory="../../lib/implot" />
+					<Add directory="../../include" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-Wall" />
+			<Add option="-fexceptions" />
+		</Compiler>
+		<Unit filename="../../include/easy_plot_v2/ep2.hpp" />
+		<Unit filename="../../include/easy_plot_v2/utility/common.hpp" />
+		<Unit filename="../../include/easy_plot_v2/utility/files.hpp" />
+		<Unit filename="../../include/easy_plot_v2/utility/func.hpp" />
+		<Unit filename="../../include/easy_plot_v2/utility/plot_config.hpp" />
+		<Unit filename="../../lib/ImGui-Addons/FileBrowser/ImGuiFileBrowser.cpp" />
+		<Unit filename="../../lib/ImGui-Addons/FileBrowser/ImGuiFileBrowser.h" />
+		<Unit filename="../../lib/imgui-sfml/imgui-SFML.cpp" />
+		<Unit filename="../../lib/imgui-sfml/imgui-SFML.h" />
+		<Unit filename="../../lib/imgui/imconfig.h" />
+		<Unit filename="../../lib/imgui/imgui.cpp" />
+		<Unit filename="../../lib/imgui/imgui.h" />
+		<Unit filename="../../lib/imgui/imgui_draw.cpp" />
+		<Unit filename="../../lib/imgui/imgui_internal.h" />
+		<Unit filename="../../lib/imgui/imgui_tables.cpp" />
+		<Unit filename="../../lib/imgui/imgui_widgets.cpp" />
+		<Unit filename="../../lib/implot/implot.cpp" />
+		<Unit filename="../../lib/implot/implot.h" />
+		<Unit filename="../../lib/implot/implot_internal.h" />
+		<Unit filename="../../lib/implot/implot_items.cpp" />
+		<Unit filename="ico.h" />
+		<Unit filename="ico.rc">
+			<Option compilerVar="WINDRES" />
+		</Unit>
+		<Unit filename="include/config.hpp" />
+		<Unit filename="include/fonts.hpp" />
+		<Unit filename="include/icon.hpp" />
+		<Unit filename="include/imgui-addons.hpp" />
+		<Unit filename="include/style.hpp" />
+		<Unit filename="main.cpp" />
+		<Unit filename="src/imgui-addons.cpp" />
+		<Extensions>
+			<lib_finder disable_auto="1" />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

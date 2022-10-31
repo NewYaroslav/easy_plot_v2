@@ -34,10 +34,11 @@ ep2::Config config;
 ep2::PlotConfig plot_config;
 bool is_open_file = false;
 bool is_open_file_error = false;
+bool is_auto_update_data = false;
 
 int main(int argc, char* argv[]) {
 	HWND hConsole = GetConsoleWindow();
-	ShowWindow(hConsole, SW_HIDE);
+	//ShowWindow(hConsole, SW_HIDE);
 
 	const std::string main_path = ep2::get_clear_path(argv[0]);
 
@@ -80,6 +81,7 @@ int main(int argc, char* argv[]) {
 	ep2::ErrorPopup error_popup("##ErrorPopup");
 
 	sf::Clock delta_clock;
+	sf::Clock reopen_file_clock;
 	while (window.isOpen()) {
 		sf::Event event;
 		while (window.pollEvent(event)) {
@@ -99,11 +101,21 @@ int main(int argc, char* argv[]) {
 			}
 		}
 
+		//{ Обновляем данные файла
+		const uint32_t reopen_file_delay = 100;
+		if (is_auto_update_data && is_open_file && reopen_file_clock.getElapsedTime().asMilliseconds() > reopen_file_delay) {
+            reopen_file_clock.restart();
+            ep2::PlotConfig reopen_plot_config = plot_config;
+            if (ep2::open_plot(reopen_plot_config)) {
+                plot_config = reopen_plot_config;
+            }
+		}
+		//} Обновляем данные файла
+
 		ImGui::SFML::Update(window, delta_clock.restart());
 
 		const size_t window_width = window.getSize().x;
 		const size_t window_height = window.getSize().y;
-
 
 		ImGui::SetNextWindowPos(ImVec2(0,0),ImGuiCond_Always);
 		ImGui::SetNextWindowSize(ImVec2(
@@ -137,12 +149,12 @@ int main(int argc, char* argv[]) {
 					break;
 				ImGui::EndMenu();
 			}
-			/*
 			if (ImGui::BeginMenu("View")) {
+                if (ImGui::MenuItem("Auto update data", nullptr, &is_auto_update_data, is_open_file)) {
 
+				}
 				ImGui::EndMenu();
 			}
-			*/
 			ImGui::EndMenuBar();
 		}
 
@@ -171,15 +183,29 @@ int main(int argc, char* argv[]) {
 			const float max_window_scale = std::min(window_size.x - 3 * window_indent - window_left_indent, window_size.y - 3 * window_indent - window_bottom_indent);
 			const float max_heatmap_scale = std::max(heatmap.w, heatmap.h);
 
+
 			ImVec2 plot_size(
-				heatmap.w * max_window_scale / max_heatmap_scale,
-				heatmap.h * max_window_scale / max_heatmap_scale);
+				((float)heatmap.w * max_window_scale / max_heatmap_scale),
+				((float)heatmap.h * max_window_scale / max_heatmap_scale));
+
 			const float max_heatmap_width = plot_size.x + window_left_indent + 2 * window_indent;
-			//}
+			//} Определяем размер окна
 
 			ImGui::BeginChild(child_title_id.c_str(), ImVec2(max_heatmap_width, plot_size.y + 2 * window_indent + window_bottom_indent), false);
 			ImGui::BeginGroup();
-			ImGui::Text(heatmap_name.c_str());
+
+			if (ImGui::BeginCombo("##HeatmapName", heatmap_name.c_str())) {
+                if (!heatmap.note.empty()) {
+                    ImGui::InputTextMultiline("Description##HeatmapDescription",
+                    (char*)heatmap.note.c_str(), heatmap.note.size(),
+                    ImVec2(0,96), ImGuiInputTextFlags_ReadOnly);
+                }
+                ImGui::Text("Size: %u X %u", heatmap.w, heatmap.h);
+                ImGui::Text("Min: %f / Max: %f", heatmap.min, heatmap.max);
+                ImGui::EndCombo();
+			}
+
+			//ImGui::Text(heatmap_name.c_str());
 
 			std::vector<int> style_to_implot_colormap = {
 				ImPlotColormap_Jet,
@@ -190,37 +216,45 @@ int main(int argc, char* argv[]) {
 				ImPlotColormap_Spectral
 			};
 
-			ImPlotColormap heatmap_style = style_to_implot_colormap[heatmap.style];
-
-			// Устанавливаем стиль тепловой карты
-			static ImPlotHeatmapFlags hm_flags = ImPlotHeatmapFlags_ColMajor;
 			//static ImPlotAxisFlags axes_flags = ImPlotAxisFlags_Lock | ImPlotAxisFlags_NoTickMarks | ImPlotAxisFlags_NoLabel;
-			static ImPlotAxisFlags axes_flags = ImPlotAxisFlags_NoLabel | ImPlotAxisFlags_NoTickMarks;// | ImPlotAxisFlags_NoDecorations;
-
-			ImPlot::PushColormap(heatmap_style);
-
+			static ImPlotAxisFlags axes_flags = 0;//ImPlotAxisFlags_NoTickLabels;
 			int value_x = 0, value_y = 0;
 
-			if (ImPlot::BeginPlot(heatmap_title_id.c_str(), plot_size, ImPlotFlags_NoLegend | ImPlotFlags_NoMouseText)) {
-				ImPlot::SetupAxes(NULL, NULL, axes_flags, axes_flags);
-				ImPlot::SetupAxesLimits(0, heatmap.w, 0, heatmap.h);
+			ImPlotColormap heatmap_style = style_to_implot_colormap[heatmap.style];
+			ImPlot::PushColormap(heatmap_style);
+
+			if (ImPlot::BeginPlot(heatmap_title_id.c_str(), plot_size, ImPlotFlags_NoLegend | ImPlotFlags_NoMouseText | ImPlotFlags_NoTitle)) {
+				ImPlot::SetupAxes(heatmap.text_x.c_str(), heatmap.text_y.c_str(), axes_flags, axes_flags);
 				ImPlot::SetupMouseText(ImPlotLocation_Center, ImPlotMouseTextFlags_None);
 
 				std::vector<float> temp = heatmap.get_data<float>();
-				ImPlot::PlotHeatmap(heatmap_name.c_str(), &temp[0], heatmap.w, heatmap.h, heatmap.min, heatmap.max, nullptr, ImPlotPoint(0,0),ImPlotPoint(heatmap.w,heatmap.h));
+
+				ImPlot::PlotHeatmap(
+                    heatmap_name.c_str(),
+                    &temp[0],
+                    heatmap.h,
+                    heatmap.w,
+                    heatmap.min,
+                    heatmap.max,
+                    nullptr,
+                    ImPlotPoint(0, 0.0),
+                    ImPlotPoint(heatmap.w, heatmap.h));
 
 				if (ImPlot::IsPlotHovered()) {
-					ImPlotPoint pt = ImPlot::GetPlotMousePos();
-					value_x = pt.x;
-					value_y = (int)(heatmap.h - pt.y - 0.0d);
+					ImPlotPoint mouse_pos = ImPlot::GetPlotMousePos();
+
+					value_x = (double)mouse_pos.x;// * (double)heatmap.h;
+					value_y = (double)mouse_pos.y;// * (double)heatmap.w;
+
 					if (value_y < 0) value_y = 0;
 					if (value_y >= heatmap.h) value_y = heatmap.h - 1;
 					if (value_x < 0) value_x = 0;
 					if (value_x >= heatmap.w) value_x = heatmap.w - 1;
 
 					static ImPlotDragToolFlags flags = ImPlotDragToolFlags_None | ImPlotDragToolFlags_NoInputs;
-					ImPlot::DragLineX(1,&pt.x,ImVec4(heatmap.mouse.r,heatmap.mouse.g,heatmap.mouse.b, 1), 1, flags);
-					ImPlot::DragLineY(2,&pt.y,ImVec4(heatmap.mouse.r,heatmap.mouse.g,heatmap.mouse.b, 1), 1, flags);
+
+					ImPlot::DragLineX(1, &mouse_pos.x, ImVec4(heatmap.mouse.r,heatmap.mouse.g,heatmap.mouse.b, 1), 1, flags);
+					ImPlot::DragLineY(2, &mouse_pos.y, ImVec4(heatmap.mouse.r,heatmap.mouse.g,heatmap.mouse.b, 1), 1, flags);
 				}
 				ImPlot::EndPlot();
 			}
@@ -233,7 +267,8 @@ int main(int argc, char* argv[]) {
 			ImGui::Text("Min: %f / Max: %f", heatmap.min, heatmap.max);
 
 			// Смена цвета тепловой карты
-			if (ImPlot::ColormapButton(ImPlot::GetColormapName(heatmap_style), ImVec2(128,0),heatmap_style)) {
+			if (ImPlot::ColormapButton(ImPlot::GetColormapName(heatmap_style),
+                    ImVec2(128,0), heatmap_style)) {
 				++heatmap.style;
 				if (heatmap.style >= style_to_implot_colormap.size()) heatmap.style = 0;
 				heatmap_style = style_to_implot_colormap[heatmap.style];
@@ -243,12 +278,17 @@ int main(int argc, char* argv[]) {
 			ImGui::SameLine();
 			ImGui::LabelText("##Colormap Index", "%s", "Change Colormap");
 
+			ImPlot::PopColormap();
+
 			ImGui::Separator();
 			ImGui::EndGroup();
 			ImGui::EndChild();
 
-			//
-			if (window_size.x > 2*max_heatmap_width && i < (plot_config.heatmap.size() - 1)) ImGui::SameLine();
+			//{ Проверяем, рисуем графики на той же линии, или переносим на новую
+			if (window_size.x > (2*max_heatmap_width) && i < (plot_config.heatmap.size() - 1)) {
+                ImGui::SameLine();
+			}
+			//} Проверяем, рисуем графики на той же линии, или переносим на новую
 		} // for i
 		//} Отрисовываем все тепловые карты
 

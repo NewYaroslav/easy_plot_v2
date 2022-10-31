@@ -38,9 +38,10 @@ bool is_auto_update_data = false;
 
 int main(int argc, char* argv[]) {
 	HWND hConsole = GetConsoleWindow();
-	//ShowWindow(hConsole, SW_HIDE);
+	ShowWindow(hConsole, SW_HIDE);
 
 	const std::string main_path = ep2::get_clear_path(argv[0]);
+	const std::string init_file_name = main_path + "imgui.ini";
 
 	if (argc >= 2) {
 		plot_config.file_name = std::string(argv[1]);
@@ -50,15 +51,6 @@ int main(int argc, char* argv[]) {
 			is_open_file = true;
 		}
 	}
-
-	/*
-	plot_config.file_name = "test.ep2";
-	if (!ep2::open_plot(plot_config)) {
-		std::cout << "Error: ep2::open_plot" << std::endl;
-	} else {
-		is_open_file = true;
-	}
-	*/
 
 	/* инициализируем окно */
 	sf::RenderWindow window(sf::VideoMode(config.start_window_width, config.start_window_height), config.window_name.c_str());
@@ -104,15 +96,20 @@ int main(int argc, char* argv[]) {
 		//{ Обновляем данные файла
 		const uint32_t reopen_file_delay = 100;
 		if (is_auto_update_data && is_open_file && reopen_file_clock.getElapsedTime().asMilliseconds() > reopen_file_delay) {
-            reopen_file_clock.restart();
-            ep2::PlotConfig reopen_plot_config = plot_config;
-            if (ep2::open_plot(reopen_plot_config)) {
-                plot_config = reopen_plot_config;
-            }
+			reopen_file_clock.restart();
+			ep2::PlotConfig reopen_plot_config = plot_config;
+			if (ep2::open_plot(reopen_plot_config)) {
+				plot_config = reopen_plot_config;
+			}
 		}
 		//} Обновляем данные файла
 
 		ImGui::SFML::Update(window, delta_clock.restart());
+		static bool is_once_load_init = false;
+		if (!is_once_load_init) {
+			is_once_load_init = true;
+			ImGui::LoadIniSettingsFromDisk(init_file_name.c_str());
+		}
 
 		const size_t window_width = window.getSize().x;
 		const size_t window_height = window.getSize().y;
@@ -150,7 +147,7 @@ int main(int argc, char* argv[]) {
 				ImGui::EndMenu();
 			}
 			if (ImGui::BeginMenu("View")) {
-                if (ImGui::MenuItem("Auto update data", nullptr, &is_auto_update_data, is_open_file)) {
+				if (ImGui::MenuItem("Auto update data", nullptr, &is_auto_update_data, is_open_file)) {
 
 				}
 				ImGui::EndMenu();
@@ -195,14 +192,14 @@ int main(int argc, char* argv[]) {
 			ImGui::BeginGroup();
 
 			if (ImGui::BeginCombo("##HeatmapName", heatmap_name.c_str())) {
-                if (!heatmap.note.empty()) {
-                    ImGui::InputTextMultiline("Description##HeatmapDescription",
-                    (char*)heatmap.note.c_str(), heatmap.note.size(),
-                    ImVec2(0,96), ImGuiInputTextFlags_ReadOnly);
-                }
-                ImGui::Text("Size: %u X %u", heatmap.w, heatmap.h);
-                ImGui::Text("Min: %f / Max: %f", heatmap.min, heatmap.max);
-                ImGui::EndCombo();
+				if (!heatmap.note.empty()) {
+					ImGui::InputTextMultiline("Description##HeatmapDescription",
+					(char*)heatmap.note.c_str(), heatmap.note.size(),
+					ImVec2(0,96), ImGuiInputTextFlags_ReadOnly);
+				}
+				ImGui::Text("Size: %u X %u", heatmap.w, heatmap.h);
+				ImGui::Text("Min: %f / Max: %f", heatmap.min, heatmap.max);
+				ImGui::EndCombo();
 			}
 
 			//ImGui::Text(heatmap_name.c_str());
@@ -230,15 +227,15 @@ int main(int argc, char* argv[]) {
 				std::vector<float> temp = heatmap.get_data<float>();
 
 				ImPlot::PlotHeatmap(
-                    heatmap_name.c_str(),
-                    &temp[0],
-                    heatmap.h,
-                    heatmap.w,
-                    heatmap.min,
-                    heatmap.max,
-                    nullptr,
-                    ImPlotPoint(0, 0.0),
-                    ImPlotPoint(heatmap.w, heatmap.h));
+					heatmap_name.c_str(),
+					&temp[0],
+					heatmap.h,
+					heatmap.w,
+					heatmap.min,
+					heatmap.max,
+					nullptr,
+					ImPlotPoint(0, 0.0),
+					ImPlotPoint(heatmap.w, heatmap.h));
 
 				if (ImPlot::IsPlotHovered()) {
 					ImPlotPoint mouse_pos = ImPlot::GetPlotMousePos();
@@ -268,7 +265,7 @@ int main(int argc, char* argv[]) {
 
 			// Смена цвета тепловой карты
 			if (ImPlot::ColormapButton(ImPlot::GetColormapName(heatmap_style),
-                    ImVec2(128,0), heatmap_style)) {
+					ImVec2(128,0), heatmap_style)) {
 				++heatmap.style;
 				if (heatmap.style >= style_to_implot_colormap.size()) heatmap.style = 0;
 				heatmap_style = style_to_implot_colormap[heatmap.style];
@@ -286,11 +283,31 @@ int main(int argc, char* argv[]) {
 
 			//{ Проверяем, рисуем графики на той же линии, или переносим на новую
 			if (window_size.x > (2*max_heatmap_width) && i < (plot_config.heatmap.size() - 1)) {
-                ImGui::SameLine();
+				ImGui::SameLine();
 			}
 			//} Проверяем, рисуем графики на той же линии, или переносим на новую
 		} // for i
 		//} Отрисовываем все тепловые карты
+
+		// Получаем имя файла
+		std::string plot_name;
+		if (!plot_config.name.empty()) plot_name = plot_config.name;
+		else plot_name = "none";
+
+		if (ImGui::BeginCombo("##PlotName", plot_name.c_str())) {
+
+			ImGui::InputText("File##PlotFileName",
+				(char*)plot_config.file_name.c_str(),
+				plot_config.file_name.size(),
+				ImGuiInputTextFlags_ReadOnly);
+
+			if (!plot_config.note.empty()) {
+				ImGui::InputTextMultiline("Description##PlotDescription",
+					(char*)plot_config.note.c_str(), plot_config.note.size(),
+					ImVec2(0,96), ImGuiInputTextFlags_ReadOnly);
+			}
+			ImGui::EndCombo();
+		}
 
 		ImGui::End();
 		//} Конец основного меню
@@ -314,10 +331,6 @@ int main(int argc, char* argv[]) {
 				ImVec2((uint64_t)std::max(file_dialog_min_width, window_width - indent_file_dialog),
 					(uint64_t)std::max(file_dialog_min_height, window_height - indent_file_dialog)),
 				".ep2")){
-
-			std::cout << file_dialog.selected_fn << std::endl;		// The name of the selected file or directory in case of Select Directory dialog mode
-			std::cout << file_dialog.selected_path << std::endl;	// The absolute path to the selected file
-			//file_dialog.selected_path;
 			plot_config.file_name = file_dialog.selected_path;
 			if (!ep2::open_plot(plot_config)) {
 				error_popup.open("ERROR", "File opening error!");
@@ -332,11 +345,6 @@ int main(int argc, char* argv[]) {
 				ImVec2((uint64_t)std::max(file_dialog_min_width, window_width - indent_file_dialog),
 					(uint64_t)std::max(file_dialog_min_height, window_height - indent_file_dialog)),
 				".ep2")){
-			std::cout << file_dialog.selected_fn << std::endl;		// The name of the selected file or directory in case of Select Directory dialog mode
-			std::cout << file_dialog.selected_path << std::endl;	// The absolute path to the selected file
-			std::cout << file_dialog.ext << std::endl;				// Access ext separately (For SAVE mode)
-			//Do writing of files based on extension here
-			//file_dialog.selected_path;
 			plot_config.file_name = file_dialog.selected_path;
 			if (!ep2::save_plot(plot_config)) {
 				error_popup.open("ERROR", "File save error!");
@@ -350,6 +358,7 @@ int main(int argc, char* argv[]) {
 		ImGui::SFML::Render(window);
 		window.display();
 	}
+	ImGui::SaveIniSettingsToDisk(init_file_name.c_str());
 	ImPlot::DestroyContext();
 	ImGui::SFML::Shutdown();
 	return 0;

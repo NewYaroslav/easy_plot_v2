@@ -68,54 +68,5 @@ int main() {
 		}
 	}
 	//
-	{
-		ep2::PlotConfig config;
-		config.file_name = "test-2.ep2";
-		config.name = "test";
-		config.note = "Your description could be here";
-
-		ep2::PlotConfig::Heatmap heatmap;
-		heatmap.init(100,120);
-		heatmap.data[0][0] = 1.0;
-		for (int x = 1; x < 100; ++x) heatmap.data[x][x] = 0.3;
-        heatmap.data[50][50] = 0.7;
-        heatmap.data[99][99] = 0.7;
-		heatmap.data[99][119] = 0.5;
-		heatmap.name = "test heatmap";
-		heatmap.note = "Your description could be here";
-		heatmap.text_x = "X description";
-		heatmap.text_y = "Y description";
-
-		config.add_heatmap(heatmap);
-
-		if (!ep2::save_plot(config)) {
-			std::cout << "Error: ep2::save_plot" << std::endl;
-		}
-	}
-
-	{
-		ep2::PlotConfig config;
-		config.file_name = "test-3.ep2";
-		config.name = "test";
-		config.note = "Your description could be here";
-
-		ep2::PlotConfig::Heatmap heatmap;
-		heatmap.init(120,100);
-		heatmap.data[0][0] = 1.0;
-		for (int x = 1; x < 100; ++x) heatmap.data[x][x] = 0.3;
-        heatmap.data[50][50] = 0.7;
-        heatmap.data[99][99] = 0.7;
-		heatmap.data[119][99] = 0.5;
-		heatmap.name = "test heatmap";
-		heatmap.note = "Your description could be here";
-		heatmap.text_x = "X description";
-		heatmap.text_y = "Y description";
-
-		config.add_heatmap(heatmap);
-
-		if (!ep2::save_plot(config)) {
-			std::cout << "Error: ep2::save_plot" << std::endl;
-		}
-	}
 	return 0;
 }

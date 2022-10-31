@@ -10,23 +10,23 @@ namespace ep2 {
 	class PlotConfig {
 	private:
 
-        inline const struct timespec get_timespec() const noexcept {
-            // https://en.cppreference.com/w/c/chrono/timespec_get
-            struct timespec ts;
+		inline const struct timespec get_timespec() const noexcept {
+			// https://en.cppreference.com/w/c/chrono/timespec_get
+			struct timespec ts;
 #			if defined(CLOCK_REALTIME)
-            clock_gettime(CLOCK_REALTIME, &ts); // Версия для POSIX
+			clock_gettime(CLOCK_REALTIME, &ts); // Версия для POSIX
 #			else
-            timespec_get(&ts, TIME_UTC);
+			timespec_get(&ts, TIME_UTC);
 #			endif
-            return ts;
-        }
+			return ts;
+		}
 
-        const uint64_t get_timestamp_ms() const noexcept {
-            const struct timespec ts = get_timespec();
-            const uint64_t MILLISECONDS_IN_SECOND = 1000;
-            const uint64_t NANOSECONDS_IN_SECOND = 1000000;
-            return MILLISECONDS_IN_SECOND * ts.tv_sec + ts.tv_nsec / NANOSECONDS_IN_SECOND;
-        }
+		const uint64_t get_timestamp_ms() const noexcept {
+			const struct timespec ts = get_timespec();
+			const uint64_t MILLISECONDS_IN_SECOND = 1000;
+			const uint64_t NANOSECONDS_IN_SECOND = 1000000;
+			return MILLISECONDS_IN_SECOND * ts.tv_sec + ts.tv_nsec / NANOSECONDS_IN_SECOND;
+		}
 
 	public:
 
@@ -46,14 +46,14 @@ namespace ep2 {
 				if (data.empty() || data[0].empty()) return std::move(temp);
 				std::vector<std::vector<double>> r_data(h, std::vector<double>(w, 0));
 				for (int x = 0; x < w; ++x) {
-                    for (int y = 0; y < h; ++y) {
+					for (int y = 0; y < h; ++y) {
 						r_data[y][x] = data[x][y];
 					}
 				}
 
 				size_t i = temp.size() - 1;
 				for (int x = 0; x < h; ++x) {
-                    for (int y = w-1; y >= 0; --y) {
+					for (int y = w-1; y >= 0; --y) {
 						temp[i--] = r_data[x][y];
 					}
 				}
@@ -255,7 +255,7 @@ namespace ep2 {
 		}
 
 		inline void init_date() noexcept {
-            date = get_timestamp_ms();
+			date = get_timestamp_ms();
 		}
 
 		inline json to_json() const {
@@ -263,9 +263,9 @@ namespace ep2 {
 			j["name"] = name;
 			j["note"] = note;
 			if (date == 0) {
-                j["date"] = get_timestamp_ms();
+				j["date"] = get_timestamp_ms();
 			} else {
-                j["date"] = date;
+				j["date"] = date;
 			}
 			j["version"] = version;
 

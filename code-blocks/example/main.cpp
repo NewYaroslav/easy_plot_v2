@@ -7,9 +7,9 @@ int main() {
 	ep2::PlotConfig save_config;
 	{
 		ep2::PlotConfig config;
-		config.file_name = "test.ep2";
-		config.name = "test";
-		config.note = "Your description could be here";
+		config.file_name = "test-heatmap.ep2";
+		config.name = "test heatmap";
+		config.desc = "Your description could be here";
 
 		ep2::PlotConfig::Heatmap heatmap;
 		heatmap.init(10,10);
@@ -19,7 +19,7 @@ int main() {
 			}
 		}
 		heatmap.name = "test heatmap";
-		heatmap.note = "Your description could be here";
+		heatmap.desc = "Your description could be here";
 		heatmap.text_x = "X description";
 		heatmap.text_y = "Y description";
 
@@ -30,8 +30,8 @@ int main() {
 				heatmap_2.data[x][y] = 1024 - std::sqrt((x - 18) * (x - 18) + (y - 18) * (y - 18));
 			}
 		}
-		heatmap_2.name = "test heatmap_2";
-		heatmap_2.note = "Your description could be here";
+		heatmap_2.name = "test heatmap 2";
+		heatmap_2.desc = "Your description could be here";
 		heatmap_2.text_x = "X description";
 		heatmap_2.text_y = "Y description";
 
@@ -45,7 +45,7 @@ int main() {
 	}
 	{
 		ep2::PlotConfig config;
-		config.file_name = "test.ep2";
+		config.file_name = "test-heatmap.ep2";
 
 		if (!ep2::open_plot(config)) {
 			std::cout << "Error: ep2::open_plot" << std::endl;
@@ -67,6 +67,34 @@ int main() {
 
 		}
 	}
-	//
+	// 3D
+	{
+		ep2::PlotConfig config;
+		config.file_name = "test-heatmap-3d.ep2";
+		config.name = "test heatmap 3d";
+		config.desc = "Your description could be here";
+
+		ep2::PlotConfig::Heatmap3D heatmap;
+		heatmap.init(120, 100, 20);
+		for(size_t x = 0 ; x < heatmap.w; ++x) {
+			for(size_t y = 0; y < heatmap.h; ++y) {
+				for(size_t z = 0; z < heatmap.l; ++z) {
+                    heatmap.data[x][y][z] = 1024 - std::sqrt((x - 18) * (x - 18) + (y - 18) * (y - 18) + (z - 18) * (z - 18));
+                }
+			}
+		}
+		heatmap.name = "test heatmap 3d";
+		heatmap.desc = "Your description could be here";
+		heatmap.text_x = "X description";
+		heatmap.text_y = "Y description";
+        heatmap.text_z = "Z description";
+
+		config.add_heatmap_3d(heatmap);
+
+		if (!ep2::save_plot(config)) {
+			std::cout << "Error: ep2::save_plot" << std::endl;
+		}
+		save_config = config;
+	}
 	return 0;
 }

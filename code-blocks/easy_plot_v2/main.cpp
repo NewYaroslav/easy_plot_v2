@@ -1,4 +1,4 @@
-#define EASY_PLOT_2_VIEWER_VERSION "0.1 DEMO"
+#define EASY_PLOT_2_VIEWER_VERSION "0.2 DEMO"
 
 #if defined(_WIN32)
 #ifndef __MINGW32__
@@ -192,9 +192,9 @@ int main(int argc, char* argv[]) {
 			ImGui::BeginGroup();
 
 			if (ImGui::BeginCombo("##HeatmapName", heatmap_name.c_str())) {
-				if (!heatmap.note.empty()) {
+				if (!heatmap.desc.empty()) {
 					ImGui::InputTextMultiline("Description##HeatmapDescription",
-					(char*)heatmap.note.c_str(), heatmap.note.size(),
+					(char*)heatmap.desc.c_str(), heatmap.desc.size(),
 					ImVec2(0,96), ImGuiInputTextFlags_ReadOnly);
 				}
 				ImGui::Text("Size: %u X %u", heatmap.w, heatmap.h);
@@ -289,6 +289,169 @@ int main(int argc, char* argv[]) {
 		} // for i
 		//} Отрисовываем все тепловые карты
 
+		//{ Отрисовываем все 3D тепловые карты
+		for (size_t i = 0; i < plot_config.heatmap_3d.size(); ++i) {
+			ep2::PlotConfig::Heatmap3D &heatmap = plot_config.heatmap_3d[i];
+
+			// Получаем имя тепловой карты
+			std::string heatmap_name;
+			if (!heatmap.name.empty()) heatmap_name = heatmap.name;
+			else heatmap_name = "none";
+
+			std::string heatmap_title_id("##Heatmap3D_" + std::to_string(i));
+			std::string child_title_id("##ChildHeatmap3D_" + std::to_string(i));
+
+			//{ Определяем размер окна
+			sf::Vector2u window_size = window.getSize();
+			const float window_indent = 8;
+			const float window_left_indent = 128;
+			const float window_bottom_indent = 128 + 64;
+			const float max_window_scale = std::min(window_size.x - 3 * window_indent - window_left_indent, window_size.y - 3 * window_indent - window_bottom_indent);
+			const float max_heatmap_scale = std::max(heatmap.w, std::max(heatmap.h, heatmap.l));
+
+			ImVec2 plot_size(
+				((float)std::max(heatmap.w, heatmap.l) * max_window_scale / max_heatmap_scale),
+				((float)std::max(heatmap.h, heatmap.l) * max_window_scale / max_heatmap_scale));
+
+			const float max_heatmap_width = plot_size.x + window_left_indent + 2 * window_indent;
+			//} Определяем размер окна
+
+			ImGui::BeginChild(child_title_id.c_str(), ImVec2(max_heatmap_width, plot_size.y + 2 * window_indent + window_bottom_indent), false);
+			ImGui::BeginGroup();
+
+			if (ImGui::BeginCombo("##Heatmap3D_Name", heatmap_name.c_str())) {
+				if (!heatmap.desc.empty()) {
+					ImGui::InputTextMultiline("Description##Heatmap3D_Description",
+					(char*)heatmap.desc.c_str(), heatmap.desc.size(),
+					ImVec2(0,96), ImGuiInputTextFlags_ReadOnly);
+				}
+				ImGui::Text("Size: %u X %u X %u", heatmap.w, heatmap.h, heatmap.l);
+				ImGui::Text("Min: %f / Max: %f", heatmap.min, heatmap.max);
+				ImGui::EndCombo();
+			}
+
+			std::vector<int> style_to_implot_colormap = {
+				ImPlotColormap_Jet,
+				ImPlotColormap_Plasma,
+				ImPlotColormap_Greys,
+				ImPlotColormap_Hot,
+				ImPlotColormap_RdBu,
+				ImPlotColormap_Spectral
+			};
+
+			int value_x = 0, value_y = 0, value_z = 0;
+
+			ImPlotColormap heatmap_style = style_to_implot_colormap[heatmap.style];
+			ImPlot::PushColormap(heatmap_style);
+
+			if (ImPlot::BeginPlot(heatmap_title_id.c_str(), plot_size, ImPlotFlags_NoLegend | ImPlotFlags_NoMouseText | ImPlotFlags_NoTitle)) {
+
+				using ViewType = ep2::PlotConfig::Heatmap3D::ViewType;
+                switch(heatmap.view_type) {
+                case ViewType::XY:
+                    ImPlot::SetupAxes(heatmap.text_x.c_str(), heatmap.text_y.c_str(), 0, 0);
+                    break;
+                case ViewType::XZ:
+                    ImPlot::SetupAxes(heatmap.text_x.c_str(), heatmap.text_z.c_str(), 0, 0);
+                    break;
+                case ViewType::YZ:
+                    ImPlot::SetupAxes(heatmap.text_z.c_str(), heatmap.text_y.c_str(), 0, 0);
+                    break;
+                };
+
+				ImPlot::SetupMouseText(ImPlotLocation_Center, ImPlotMouseTextFlags_None);
+
+				heatmap.check_layer();
+				std::vector<float> temp = heatmap.get_data<float>(heatmap.view_type, heatmap.layer);
+
+				const int w = heatmap.get_2d_w();
+				const int h = heatmap.get_2d_h();
+
+				ImPlot::PlotHeatmap(
+					heatmap_name.c_str(),
+					&temp[0],
+					h,
+					w,
+					heatmap.min,
+					heatmap.max,
+					nullptr,
+					ImPlotPoint(0, 0.0),
+					ImPlotPoint(w, h));
+
+				if (ImPlot::IsPlotHovered()) {
+					ImPlotPoint mouse_pos = ImPlot::GetPlotMousePos();
+
+					switch(heatmap.view_type) {
+                    case ViewType::XY:
+                        value_x = (double)mouse_pos.x;
+                        value_y = (double)mouse_pos.y;
+                        break;
+                    case ViewType::XZ:
+                        value_x = (double)mouse_pos.x;
+                        value_z = (double)mouse_pos.y;
+                        break;
+                    case ViewType::YZ:
+                        value_z = (double)mouse_pos.x;
+                        value_y = (double)mouse_pos.y;
+                        break;
+                    };
+
+					if (value_y < 0) value_y = 0;
+					if (value_y >= heatmap.h) value_y = heatmap.h - 1;
+					if (value_x < 0) value_x = 0;
+					if (value_x >= heatmap.w) value_x = heatmap.w - 1;
+					if (value_z < 0) value_z = 0;
+					if (value_z >= heatmap.l) value_z = heatmap.l - 1;
+
+					static ImPlotDragToolFlags flags = ImPlotDragToolFlags_None | ImPlotDragToolFlags_NoInputs;
+
+					ImPlot::DragLineX(1, &mouse_pos.x, ImVec4(heatmap.mouse.r,heatmap.mouse.g,heatmap.mouse.b, 1), 1, flags);
+					ImPlot::DragLineY(2, &mouse_pos.y, ImVec4(heatmap.mouse.r,heatmap.mouse.g,heatmap.mouse.b, 1), 1, flags);
+				}
+				ImPlot::EndPlot();
+			}
+
+			ImGui::SameLine();
+			ImPlot::ColormapScale("##Heatmap3D_HeatScale", heatmap.min, heatmap.max, ImVec2(window_left_indent / 1.5, plot_size.y));
+
+			using ViewType = ep2::PlotConfig::Heatmap3D::ViewType;
+            ImGui::RadioButton("XY", &heatmap.view_type, ViewType::XY); ImGui::SameLine();
+            ImGui::RadioButton("XZ", &heatmap.view_type, ViewType::XZ); ImGui::SameLine();
+            ImGui::RadioButton("YZ", &heatmap.view_type, ViewType::YZ);
+
+            ImGui::SliderInt("Layer##Heatmap3D_Layer", &heatmap.layer, 0, heatmap.get_2d_l() - 1);
+
+			// Вывод значения ячейки
+			ImGui::Text("(%u, %u, %u) = %f", value_x, value_y, value_z, heatmap.data[value_x][value_y][value_z]);
+			// Вывод мин-макс значений
+			ImGui::Text("Min: %f / Max: %f", heatmap.min, heatmap.max);
+
+			// Смена цвета тепловой карты
+			if (ImPlot::ColormapButton(ImPlot::GetColormapName(heatmap_style),
+					ImVec2(128,0), heatmap_style)) {
+				++heatmap.style;
+				if (heatmap.style >= style_to_implot_colormap.size()) heatmap.style = 0;
+				heatmap_style = style_to_implot_colormap[heatmap.style];
+				ImPlot::BustColorCache(heatmap_title_id.c_str());
+			}
+			// Вывод мин-макс значений
+			ImGui::SameLine();
+			ImGui::LabelText("##Colormap Index", "%s", "Change Colormap");
+
+			ImPlot::PopColormap();
+
+			ImGui::Separator();
+			ImGui::EndGroup();
+			ImGui::EndChild();
+
+			//{ Проверяем, рисуем графики на той же линии, или переносим на новую
+			if (window_size.x > (2*max_heatmap_width) && i < (plot_config.heatmap.size() - 1)) {
+				ImGui::SameLine();
+			}
+			//} Проверяем, рисуем графики на той же линии, или переносим на новую
+		} // for i
+		//} Отрисовываем все 3D тепловые карты
+
 		// Получаем имя файла
 		std::string plot_name;
 		if (!plot_config.name.empty()) plot_name = plot_config.name;
@@ -301,9 +464,9 @@ int main(int argc, char* argv[]) {
 				plot_config.file_name.size(),
 				ImGuiInputTextFlags_ReadOnly);
 
-			if (!plot_config.note.empty()) {
+			if (!plot_config.desc.empty()) {
 				ImGui::InputTextMultiline("Description##PlotDescription",
-					(char*)plot_config.note.c_str(), plot_config.note.size(),
+					(char*)plot_config.desc.c_str(), plot_config.desc.size(),
 					ImVec2(0,96), ImGuiInputTextFlags_ReadOnly);
 			}
 			ImGui::EndCombo();

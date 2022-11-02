@@ -26,7 +26,7 @@ namespace ep2 {
 
 	using json = nlohmann::json;
 
-	static inline int EASY_PLOT_2_VERSION			 = 1;	/**< Версия библиотеки */
+	static inline int EASY_PLOT_2_VERSION   = 2;    /**< Версия библиотеки */
 
 	class Color {
 	public:
@@ -95,6 +95,7 @@ namespace ep2 {
 
 	enum PlotType {
 		HEATMAP = 0,
+		HEATMAP_3D,
 	};
 
 }; // ep2

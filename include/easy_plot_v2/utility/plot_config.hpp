@@ -142,10 +142,10 @@ namespace ep2 {
 				try {
 					name = j["name"];
 					if (j.contains("note")) {
-                        desc = j["note"];
+						desc = j["note"];
 					} else
 					if (j.contains("desc")){
-                        desc = j["desc"];
+						desc = j["desc"];
 					}
 					text_x = j["text_x"];
 					text_y = j["text_y"];
@@ -171,16 +171,16 @@ namespace ep2 {
 			}
 		};
 
-        /** \brief Класс для работы с 3D тепловой картой
-         */
+		/** \brief Класс для работы с 3D тепловой картой
+		 */
 		class Heatmap3D {
 		private:
 
-            template<class T>
+			template<class T>
 			std::vector<T> to_data(
-                    const std::vector<std::vector<double>> &src,
-                    const size_t _w,
-                    const size_t _h) {
+					const std::vector<std::vector<double>> &src,
+					const size_t _w,
+					const size_t _h) {
 				std::vector<T> temp(_w * _h);
 				if (src.empty() || src[0].empty()) return std::move(temp);
 				std::vector<std::vector<double>> r_data(_h, std::vector<double>(_w, 0));
@@ -203,45 +203,77 @@ namespace ep2 {
 			std::vector<std::vector<std::vector<double>>> data;
 
 			enum ViewType {
-                XY,
-                XZ,
-                YZ
+				XY,
+				XZ,
+				YZ
 			};
 
 			template<class T>
 			std::vector<T> get_data(const int type, size_t v) {
-                std::vector<std::vector<double>> temp;
-                switch (type) {
-                case ViewType::XY:
-                    if (v >= l) v = l - 1;
-                    temp.resize(w, std::vector<double>(h, 0));
-                    for (size_t x = 0; x < w; ++x) {
-                        for (size_t y = 0; y < h; ++y) {
-                            temp[x][y] = data[x][y][v];
-                        }
-                    }
-                    return to_data<T>(temp, w, h);
-                case ViewType::XZ:
-                    if (v >= h) v = h - 1;
-                    temp.resize(w, std::vector<double>(l, 0));
-                    for (size_t x = 0; x < w; ++x) {
-                        for (size_t z = 0; z < l; ++z) {
-                            temp[x][z] = data[x][v][z];
-                        }
-                    }
-                    return to_data<T>(temp, w, l);
-                case ViewType::YZ:
-                    if (v >= w) v = w - 1;
-                    temp.resize(l, std::vector<double>(h, 0));
-                    for (size_t z = 0; z < l; ++z) {
-                        for (size_t y = 0; y < h; ++y) {
-                            temp[z][y] = data[v][y][z];
-                        }
-                    }
-                    return to_data<T>(temp, l, h);
-                }
+				std::vector<std::vector<double>> temp;
+				switch (type) {
+				case ViewType::XY:
+					if (v >= l) v = l - 1;
+					temp.resize(w, std::vector<double>(h, 0));
+					for (size_t x = 0; x < w; ++x) {
+						for (size_t y = 0; y < h; ++y) {
+							temp[x][y] = data[x][y][v];
+						}
+					}
+					return to_data<T>(temp, w, h);
+				case ViewType::XZ:
+					if (v >= h) v = h - 1;
+					temp.resize(w, std::vector<double>(l, 0));
+					for (size_t x = 0; x < w; ++x) {
+						for (size_t z = 0; z < l; ++z) {
+							temp[x][z] = data[x][v][z];
+						}
+					}
+					return to_data<T>(temp, w, l);
+				case ViewType::YZ:
+					if (v >= w) v = w - 1;
+					temp.resize(l, std::vector<double>(h, 0));
+					for (size_t z = 0; z < l; ++z) {
+						for (size_t y = 0; y < h; ++y) {
+							temp[z][y] = data[v][y][z];
+						}
+					}
+					return to_data<T>(temp, l, h);
+				}
 
 				return to_data<T>(temp, 0, 0);
+			}
+
+			template<class T>
+			std::vector<T> get_line_data(const int type, size_t lx, size_t ly) {
+				std::vector<T> temp;
+				switch (type) {
+				case ViewType::XY:
+					if (lx >= w) lx = w - 1;
+					if (ly >= h) ly = h - 1;
+					temp.resize(l, 0);
+					for (size_t z = 0; z < l; ++z) {
+						temp[z] = data[lx][ly][z];
+					}
+					return std::move(temp);
+				case ViewType::XZ:
+					if (lx >= w) lx = w - 1;
+					if (ly >= l) ly = l - 1;
+					temp.resize(h, 0);
+					for (size_t y = 0; y < h; ++y) {
+						temp[y] = data[lx][y][ly];
+					}
+					return std::move(temp);
+				case ViewType::YZ:
+					if (lx >= l) lx = l - 1;
+					if (ly >= h) ly = h - 1;
+					temp.resize(w, 0);
+					for (size_t x = 0; x < w; ++x) {
+						temp[x] = data[x][ly][lx];
+					}
+					return std::move(temp);
+				}
+				return std::move(temp);
 			}
 
 			int w = 0;
@@ -266,9 +298,9 @@ namespace ep2 {
 				max = min = data[0][0][0];
 				for (size_t x = 0; x < w; ++x) {
 					for (size_t y = 0; y < h; ++y) {
-                        for (size_t z = 0; z < l; ++z) {
-                            if (data[x][y][z] < min) min = data[x][y][z];
-                            if (data[x][y][z] > max) max = data[x][y][z];
+						for (size_t z = 0; z < l; ++z) {
+							if (data[x][y][z] < min) min = data[x][y][z];
+							if (data[x][y][z] > max) max = data[x][y][z];
 						}
 					}
 				}
@@ -279,9 +311,9 @@ namespace ep2 {
 				scale_max = scale_min = data[0][0][0];
 				for (size_t x = 0; x < w; ++x) {
 					for (size_t y = 0; y < h; ++y) {
-                        for (size_t z = 0; z < l; ++z) {
-                            if (data[x][y][z] < scale_min) scale_min = data[x][y][z];
-                            if (data[x][y][z] > scale_max) scale_max = data[x][y][z];
+						for (size_t z = 0; z < l; ++z) {
+							if (data[x][y][z] < scale_min) scale_min = data[x][y][z];
+							if (data[x][y][z] > scale_max) scale_max = data[x][y][z];
 						}
 					}
 				}
@@ -295,62 +327,62 @@ namespace ep2 {
 
 			int style	= HeatMapStyle::DEFAULT_HEATMAP;
 
-			Point2D start   = Point2D(0,0);
+			Point2D start	= Point2D(0,0);
 			Point2D step	= Point2D(1,1);
 
-			Color text      = Color(1.0,1.0,1.0);	/**< цвет текста */
-			Color mouse     = Color(0.5,0.5,0.5);	/**< цвет указателя */
+			Color text		= Color(1.0,1.0,1.0);	/**< цвет текста */
+			Color mouse		= Color(0.5,0.5,0.5);	/**< цвет указателя */
 
-            int view_type = ViewType::XY;
-            int layer = 0;
+			int view_type = ViewType::XY;
+			int layer = 0;
 
-            inline void check_layer() {
-                if (layer < 0) layer = 0;
-                switch(view_type) {
-                case ViewType::XY:
-                    if (layer > l) layer = l - 1;
-                    break;
+			inline void check_layer() {
+				if (layer < 0) layer = 0;
+				switch(view_type) {
+				case ViewType::XY:
+					if (layer > l) layer = l - 1;
+					break;
 				case ViewType::XZ:
-                    if (layer > h) layer = h - 1;
-                    break;
+					if (layer > h) layer = h - 1;
+					break;
 				case ViewType::YZ:
-                    if (layer > w) layer = w - 1;
-                    break;
+					if (layer > w) layer = w - 1;
+					break;
 				};
 			}
 
-            inline int get_2d_w() {
-                switch(view_type) {
-                case ViewType::XY:
-                    return w;
+			inline int get_2d_w() {
+				switch(view_type) {
+				case ViewType::XY:
+					return w;
 				case ViewType::XZ:
-                    return w;
+					return w;
 				case ViewType::YZ:
-                    return l;
+					return l;
 				};
 				return 0;
 			}
 
 			inline int get_2d_h() {
-                switch(view_type) {
-                case ViewType::XY:
-                    return h;
+				switch(view_type) {
+				case ViewType::XY:
+					return h;
 				case ViewType::XZ:
-                    return l;
+					return l;
 				case ViewType::YZ:
-                    return h;
+					return h;
 				};
 				return 0;
 			}
 
 			inline int get_2d_l() {
-                switch(view_type) {
-                case ViewType::XY:
-                    return l;
+				switch(view_type) {
+				case ViewType::XY:
+					return l;
 				case ViewType::XZ:
-                    return h;
+					return h;
 				case ViewType::YZ:
-                    return w;
+					return w;
 				};
 				return 0;
 			}
@@ -380,8 +412,8 @@ namespace ep2 {
 					for (size_t y = 0; y < data[x].size(); ++y) {
 						j_data[x][y] = json::array();
 						for (size_t z = 0; z < data[x][y].size(); ++z) {
-                            j_data[x][y][z] = data[x][y][z];
-                        }
+							j_data[x][y][z] = data[x][y][z];
+						}
 					}
 				}
 				j["data"] = j_data;
@@ -392,19 +424,22 @@ namespace ep2 {
 				try {
 					name = j["name"];
 					if (j.contains("note")) {
-                        desc = j["note"];
+						desc = j["note"];
 					} else
 					if (j.contains("desc")){
-                        desc = j["desc"];
+						desc = j["desc"];
 					}
+
 					text_x = j["text_x"];
 					text_y = j["text_y"];
 					text_z = j["text_z"];
 					style = j["style"];
+
 					start.from_json(j["start"]);
 					step.from_json(j["step"]);
 					text.from_json(j["color"]["text"]);
 					mouse.from_json(j["color"]["mouse"]);
+
 					w = j["w"];
 					h = j["h"];
 					l = j["l"];
@@ -415,12 +450,14 @@ namespace ep2 {
 					for (size_t x = 0; x < w; ++x) {
 						for (size_t y = 0; y < h; ++y) {
 							 for (size_t z = 0; z < l; ++z) {
-                                data[x][y][z] = j_data[x][y][z];
+								data[x][y][z] = j_data[x][y][z];
 							 }
 						}
 					}
 					return true;
-				} catch(...) {};
+				} catch(...) {
+					return false;
+				};
 				return false;
 			}
 		};
@@ -472,10 +509,10 @@ namespace ep2 {
 				try {
 					name = j["name"];
 					if (j.contains("note")) {
-                        desc = j["note"];
+						desc = j["note"];
 					} else
 					if (j.contains("desc")){
-                        desc = j["desc"];
+						desc = j["desc"];
 					}
 					text_x = j["text_x"];
 					text_y = j["text_y"];
@@ -564,11 +601,11 @@ namespace ep2 {
 			try {
 				name = j["name"];
 				if (j.contains("note")) {
-                    desc = j["note"];
-                } else
-                if (j.contains("desc")){
-                    desc = j["desc"];
-                }
+					desc = j["note"];
+				} else
+				if (j.contains("desc")){
+					desc = j["desc"];
+				}
 				date = j["date"];
 				version = j["version"];
 
@@ -591,6 +628,16 @@ namespace ep2 {
 			return false;
 		}
 
+		void clear() {
+			name.clear();
+			desc.clear();
+			date = 0;
+			version = EASY_PLOT_2_VERSION;
+			line.clear();
+			heatmap.clear();
+			heatmap_3d.clear();
+		}
+
 		inline std::vector<std::uint8_t> to_msgpack() const {
 			std::vector<std::uint8_t> v_msgpack = json::to_msgpack(to_json());
 			return std::move(v_msgpack);
@@ -599,7 +646,8 @@ namespace ep2 {
 		inline bool from_msgpack(const std::vector<std::uint8_t> &v_msgpack) {
 			try {
 				json j_from_msgpack = json::from_msgpack(v_msgpack);
-				return from_json(j_from_msgpack);
+				if (from_json(j_from_msgpack)) return true;
+				clear();
 			} catch(...) {};
 			return false;
 		}

@@ -1,4 +1,4 @@
-#define EASY_PLOT_2_VIEWER_VERSION "0.4 DEMO"
+#define EASY_PLOT_2_VIEWER_VERSION "0.5 DEMO"
 
 #if defined(_WIN32)
 #ifndef __MINGW32__
@@ -25,6 +25,8 @@
 #include "include/fonts.hpp"
 #include "include/style.hpp"
 #include "include/imgui-addons.hpp"
+
+#include "ztime.hpp"
 
 #include "easy_plot_v2/ep2.hpp"
 
@@ -518,6 +520,172 @@ int main(int argc, char* argv[]) {
 			//} Проверяем, рисуем графики на той же линии, или переносим на новую
 		} // for i
 		//} Отрисовываем все 3D тепловые карты
+
+		//----------------------------------------------------------------------
+
+		//{ Отрисовываем все 2D графики
+		double line_sum_x = 0;
+		for (size_t i = 0; i < plot_config.line.size(); ++i) {
+			ep2::PlotConfig::Line &line = plot_config.line[i];
+
+			// Получаем имя тепловой карты
+			std::string line_name;
+			if (!line.name.empty()) line_name = line.name;
+			else line_name = "none";
+
+			std::string line_title_id("##Line_" + std::to_string(i));
+			std::string child_title_id("##ChildLine_" + std::to_string(i));
+
+			//{ Определяем размер окна
+			sf::Vector2u window_size = window.getSize();
+			const float window_indent = 8;
+			/*
+			const float window_left_indent = 128;
+			const float window_bottom_indent = 128 + 128;
+			const float max_window_scale = std::max(std::min(
+				window_size.x - 3 * window_indent - window_left_indent,
+				window_size.y - 3 * window_indent - window_bottom_indent),
+				256.0f);
+			const float max_heatmap_scale = std::max(line.w, line.h);
+
+			ImVec2 plot_size(
+				((float)line.w * max_window_scale / max_heatmap_scale),
+				((float)line.h * max_window_scale / max_heatmap_scale));
+
+			const float max_heatmap_width = plot_size.x + window_left_indent + 2 * window_indent;
+			*/
+			//} Определяем размер окна
+
+			ImGui::BeginChild(child_title_id.c_str(),
+				ImVec2(-1, window_size.y - 3 * window_indent - 64),
+				false);
+			ImGui::BeginGroup();
+
+			if (ImGui::BeginCombo("##Line_Name", line_name.c_str())) {
+				if (!line.desc.empty()) {
+					ImGui::InputTextMultiline("Description##Line_Description",
+					(char*)line.desc.c_str(), line.desc.size(),
+					ImVec2(0,96), ImGuiInputTextFlags_ReadOnly);
+				}
+				ImGui::Text("Size: %u", line.data_x.size());
+				ImGui::Text("Min Y: %f / Max Y: %f", line.min_y, line.max_y);
+				ImGui::EndCombo();
+			}
+
+			size_t pos_x = 0;
+			// ImVec2(-1,0)
+			if (ImPlot::BeginPlot(line_title_id.c_str(),
+				//plot_size,
+				ImVec2(-1,0),
+				ImPlotFlags_NoLegend |
+				ImPlotFlags_NoMouseText |
+				ImPlotFlags_NoTitle)) {
+
+				ImPlot::SetupAxes(line.text_x.c_str(), line.text_y.c_str(), ImPlotLineFlags_SkipNaN, ImPlotLineFlags_SkipNaN);
+
+				if (line.use_scale_time_x) ImPlot::SetupAxisScale(ImAxis_X1, ImPlotScale_Time);
+				else if (line.use_scale_log10_x) ImPlot::SetupAxisScale(ImAxis_X1, ImPlotScale_Log10);
+				if (line.use_scale_time_y) ImPlot::SetupAxisScale(ImAxis_Y1, ImPlotScale_Time);
+				else if (line.use_scale_log10_y) ImPlot::SetupAxisScale(ImAxis_Y1, ImPlotScale_Log10);
+
+				if (!line.formatter_x.empty()) ImPlot::SetupAxisFormat(ImAxis_X1, line.formatter_x.c_str());
+				if (!line.formatter_y.empty()) ImPlot::SetupAxisFormat(ImAxis_Y1, line.formatter_y.c_str());
+
+				ImPlot::SetupAxesLimits(line.min_x, line.max_x, line.min_y, line.max_y);
+
+				ImPlot::PlotLine("##Line_PlotLine", &line.data_x[0], &line.data_y[0], line.data_x.size());
+				if (ImPlot::IsPlotHovered()) {
+					ImPlotPoint mouse_pos = ImPlot::GetPlotMousePos();
+
+					pos_x = line.get_index(mouse_pos.x, mouse_pos.y);
+					ImPlotPoint line_pos(line.data_x[pos_x], line.data_y[pos_x]);
+
+					static ImPlotDragToolFlags flags = ImPlotDragToolFlags_None | ImPlotDragToolFlags_NoInputs;
+					ImPlot::DragLineX(1, &line_pos.x, ImVec4(line.mouse.r, line.mouse.g, line.mouse.b, 1), 1, flags);
+					ImPlot::DragLineY(2, &line_pos.y, ImVec4(line.mouse.r, line.mouse.g, line.mouse.b, 1), 1, flags);
+				}
+				ImPlot::EndPlot();
+
+			}
+
+			// Вывод значения ячейки
+			std::string print_text = "[";
+			if (line.use_scale_time_x) {
+				switch (line.time_mode_x) {
+				case ep2::TimeMode::MILLISECONDS:
+					print_text += std::to_string((uint64_t)(line.data_x[pos_x] * 1000.0)) + " ms";
+					break;
+				case ep2::TimeMode::SECONDS:
+					print_text += std::to_string((uint64_t)(line.data_x[pos_x])) + " s";
+					break;
+				case ep2::TimeMode::MINUTES:
+					print_text += std::to_string((uint64_t)(line.data_x[pos_x]/60.0)) + " m";
+					break;
+				case ep2::TimeMode::HOURS:
+					print_text += std::to_string((uint64_t)(line.data_x[pos_x]/3600.0)) + " m";
+					break;
+				case ep2::TimeMode::TIME:
+					print_text += ztime::get_str_time(line.data_x[pos_x]);
+					break;
+				case ep2::TimeMode::DATE:
+					print_text += ztime::get_str_date(line.data_x[pos_x]);
+					break;
+				case ep2::TimeMode::DATE_TIME:
+					print_text += ztime::get_str_date_time(line.data_x[pos_x]);
+					break;
+				case ep2::TimeMode::DATE_TIME_MS:
+					print_text += ztime::get_str_date_time_ms(line.data_x[pos_x]);
+					break;
+				};
+			} else {
+				print_text += std::to_string(line.data_x[pos_x]);
+			}
+			print_text += "] = ";
+			if (line.use_scale_time_y) {
+				switch (line.time_mode_y) {
+				case ep2::TimeMode::MILLISECONDS:
+					print_text += std::to_string((uint64_t)(line.data_y[pos_x] * 1000.0)) + " ms";
+					break;
+				case ep2::TimeMode::SECONDS:
+					print_text += std::to_string((uint64_t)(line.data_y[pos_x])) + " s";
+					break;
+				case ep2::TimeMode::MINUTES:
+					print_text += std::to_string((uint64_t)(line.data_y[pos_x]/60.0)) + " m";
+					break;
+				case ep2::TimeMode::HOURS:
+					print_text += std::to_string((uint64_t)(line.data_y[pos_x]/3600.0)) + " m";
+					break;
+				case ep2::TimeMode::TIME:
+					print_text += ztime::get_str_time(line.data_y[pos_x]);
+					break;
+				case ep2::TimeMode::DATE:
+					print_text += ztime::get_str_date(line.data_y[pos_x]);
+					break;
+				case ep2::TimeMode::DATE_TIME:
+					print_text += ztime::get_str_date_time(line.data_y[pos_x]);
+					break;
+				case ep2::TimeMode::DATE_TIME_MS:
+					print_text += ztime::get_str_date_time_ms(line.data_y[pos_x]);
+					break;
+				};
+			} else {
+				print_text += std::to_string(line.data_y[pos_x]);
+			}
+			ImGui::Text(print_text.c_str());
+
+			ImGui::EndGroup();
+			ImGui::EndChild();
+			ImGui::Separator();
+			/*
+			//{ Проверяем, рисуем графики на той же линии, или переносим на новую
+			line_sum_x += max_heatmap_width;
+			if (ImGui::GetWindowContentRegionWidth() > (line_sum_x + max_heatmap_width) && i < (plot_config.line.size() - 1)) {
+				ImGui::SameLine();
+			}
+			//}
+			*/
+		} // for i
+		//} Отрисовываем все 2D графики
 
 		// Получаем имя файла
 		std::string plot_name;

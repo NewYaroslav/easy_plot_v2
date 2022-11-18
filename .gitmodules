@@ -13,3 +13,6 @@
 [submodule "lib/implot"]
 	path = lib/implot
 	url = https://github.com/epezent/implot.git
+[submodule "lib/ztime-cpp"]
+	path = lib/ztime-cpp
+	url = https://github.com/NewYaroslav/ztime-cpp.git

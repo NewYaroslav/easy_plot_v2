@@ -22,6 +22,7 @@
 					<Add directory="../../lib/ImGui-Addons/FileBrowser" />
 					<Add directory="../../lib/json/include" />
 					<Add directory="../../lib/implot" />
+					<Add directory="../../lib/ztime-cpp/src" />
 					<Add directory="../../include" />
 				</Compiler>
 				<Linker>
@@ -45,6 +46,7 @@
 					<Add directory="../../lib/ImGui-Addons/FileBrowser" />
 					<Add directory="../../lib/json/include" />
 					<Add directory="../../lib/implot" />
+					<Add directory="../../lib/ztime-cpp/src" />
 					<Add directory="../../include" />
 				</Linker>
 			</Target>
@@ -73,13 +75,14 @@
 		<Unit filename="../../lib/implot/implot.h" />
 		<Unit filename="../../lib/implot/implot_internal.h" />
 		<Unit filename="../../lib/implot/implot_items.cpp" />
+		<Unit filename="../../lib/ztime-cpp/src/ztime.cpp" />
+		<Unit filename="../../lib/ztime-cpp/src/ztime.hpp" />
 		<Unit filename="ico.h" />
 		<Unit filename="ico.rc">
 			<Option compilerVar="WINDRES" />
 		</Unit>
 		<Unit filename="include/config.hpp" />
 		<Unit filename="include/fonts.hpp" />
-		<Unit filename="include/icon.hpp" />
 		<Unit filename="include/imgui-addons.hpp" />
 		<Unit filename="include/style.hpp" />
 		<Unit filename="main.cpp" />

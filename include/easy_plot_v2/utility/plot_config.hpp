@@ -467,9 +467,68 @@ namespace ep2 {
 			std::vector<double> data_x;
 			std::vector<double> data_y;
 
+			int w = 0;
+			int h = 0;
+
+			double min_x = 0;
+			double max_x = 0;
+			double min_y = 0;
+			double max_y = 0;
+
+			bool use_scale_time_x = false;
+			bool use_scale_time_y = false;
+			bool use_scale_log10_x = false;
+			bool use_scale_log10_y = false;
+
+			int time_mode_x = TimeMode::DATE;
+			int time_mode_y = TimeMode::DATE;
+
 			inline void init(const size_t l) noexcept {
-				data_x.resize(l,0);
-				data_y.resize(l,0);
+				data_x.resize(l, 0);
+				data_y.resize(l, 0);
+				w = l;
+				h = l;
+			}
+
+			inline void fill_x() noexcept {
+				for(size_t i = 0; i < data_x.size(); ++i) {
+					data_x[i] = (double)i;
+				}
+			}
+
+			inline void calc_min_max(
+					const std::vector<double> &data,
+					double &scale_min,
+					double &scale_max) const noexcept {
+				if (data.empty()) return;
+				scale_max = scale_min = data_x[0];
+				for (size_t i = 0; i < data.size(); ++i) {
+					if (data[i] > scale_max) scale_max = data[i];
+					if (data[i] < scale_min) scale_min = data[i];
+				}
+			}
+
+			inline void calc_min_max() noexcept {
+				if (!data_x.empty()) {
+					calc_min_max(data_x, min_x, max_x);
+				}
+				if (!data_x.empty()) {
+					calc_min_max(data_y, min_y, max_y);
+				}
+			}
+
+			inline size_t get_index(const double value_x, const double value_y) noexcept {
+				if (data_x.empty()) return 0;
+				size_t index = 0;
+				double e = std::numeric_limits<double>::max();
+				for (size_t i = 0; i < data_x.size(); ++i) {
+					const double temp = std::abs(data_x[i] - value_x) + std::abs(data_y[i] - value_y);
+					if (temp < e) {
+						e = temp;
+						index = i;
+					}
+				}
+				return index;
 			}
 
 			int id = 0;
@@ -478,6 +537,8 @@ namespace ep2 {
 			std::string desc;
 			std::string text_x;
 			std::string text_y;
+			std::string formatter_x;
+			std::string formatter_y;
 
 			Point2D grid_period = Point2D(0,0);
 
@@ -491,8 +552,34 @@ namespace ep2 {
 				json j;
 				j["name"] = name;
 				j["desc"] = desc;
+				if (use_scale_time_x) {
+					j["scale"]["time_x"] = true;
+					j["scale"]["time_mode_x"] = time_mode_x;
+				}
+				if (use_scale_time_y) {
+					j["scale"]["time_y"] = true;
+					j["scale"]["time_mode_y"] = time_mode_y;
+				}
+				if (use_scale_log10_x) j["scale"]["log10_x"] = true;
+				if (use_scale_log10_y) j["scale"]["log10_y"] = true;
+				j["w"] = w;
+				j["h"] = h;
+				{
+					double scale_min = 0, scale_max = 0;
+					calc_min_max(data_x, scale_min, scale_max);
+					j["max_x"] = scale_max;
+					j["min_x"] = scale_min;
+				}
+				{
+					double scale_min = 0, scale_max = 0;
+					calc_min_max(data_y, scale_min, scale_max);
+					j["max_y"] = scale_max;
+					j["min_y"] = scale_min;
+				}
 				j["text_x"] = text_x;
 				j["text_y"] = text_y;
+				j["formatter_x"] = formatter_x;
+				j["formatter_y"] = formatter_y;
 				j["id"] = id;
 				j["grid_period"] = grid_period.to_json();
 				j["color"]["line"] = line.to_json();
@@ -508,14 +595,32 @@ namespace ep2 {
 			inline bool from_json(json &j) {
 				try {
 					name = j["name"];
+					if (j.contains("scale")) {
+						if (j["scale"].contains("time_x")) {
+							use_scale_time_x = j["scale"]["time_x"];
+							time_mode_x = j["scale"]["time_mode_x"];
+						}
+						if (j["scale"].contains("time_y")) {
+							use_scale_time_x = j["scale"]["time_y"];
+							time_mode_y = j["scale"]["time_mode_y"];
+						}
+						if (j["scale"].contains("log10_x")) {
+							use_scale_log10_x = j["scale"]["log10_x"];
+						}
+						if (j["scale"].contains("log10_y")) {
+							use_scale_log10_y = j["scale"]["log10_y"];
+						}
+					}
 					if (j.contains("note")) {
 						desc = j["note"];
 					} else
-					if (j.contains("desc")){
+					if (j.contains("desc")) {
 						desc = j["desc"];
 					}
 					text_x = j["text_x"];
 					text_y = j["text_y"];
+					if (j.contains("formatter_x")) formatter_x = j["formatter_x"];
+					if (j.contains("formatter_y")) formatter_y = j["formatter_y"];
 					id = j["id"];
 					grid_period.from_json(j["grid_period"]);
 					line.from_json(j["color"]["line"]);
@@ -525,6 +630,12 @@ namespace ep2 {
 					mouse.from_json(j["color"]["mouse"]);
 					data_x = j["data"]["x"].get<std::vector<double>>();
 					data_y = j["data"]["y"].get<std::vector<double>>();
+					w = j["w"];
+					h = j["h"];
+					if (j.contains("min_x")) min_x = j["min_x"];
+					if (j.contains("max_x")) max_x = j["max_x"];
+					if (j.contains("min_y")) min_y = j["min_y"];
+					if (j.contains("max_y")) max_y = j["max_y"];
 					return true;
 				} catch(...) {};
 				return false;

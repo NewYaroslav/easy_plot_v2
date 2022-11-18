@@ -19,14 +19,13 @@
 #endif
 #endif
 
-
-#include <nlohmann/json.hpp>
+#include <limits>
 
 namespace ep2 {
 
 	using json = nlohmann::json;
 
-	static inline int EASY_PLOT_2_VERSION   = 2;    /**< Версия библиотеки */
+	static inline int EASY_PLOT_2_VERSION	= 4;	/**< Версия библиотеки */
 
 	class Color {
 	public:
@@ -96,6 +95,17 @@ namespace ep2 {
 	enum PlotType {
 		HEATMAP = 0,
 		HEATMAP_3D,
+	};
+
+	enum TimeMode {
+		MILLISECONDS = 0,
+		SECONDS = 1,
+		MINUTES = 2,
+		HOURS = 3,
+		TIME = 4,
+		DATE = 5,
+		DATE_TIME = 6,
+		DATE_TIME_MS = 7,
 	};
 
 }; // ep2

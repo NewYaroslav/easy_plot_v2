@@ -96,5 +96,86 @@ int main() {
 		}
 		save_config = config;
 	}
+	// Line
+	{
+        ep2::PlotConfig config;
+		config.file_name = "test-line.ep2";
+		config.name = "test line";
+		config.desc = "Your description could be here";
+
+		ep2::PlotConfig::Line line;
+		line.init(100);
+		for(size_t x = 0 ; x < line.w; ++x) {
+            line.data_x[x] = x * 10;
+            line.data_y[x] = 100 + std::sqrt((x - 20) * (x - 20));
+		}
+		line.name = "test line";
+		line.desc = "Your description could be here";
+		line.text_x = "X description";
+		line.text_y = "Y description";
+
+		config.add_line(line);
+
+		if (!ep2::save_plot(config)) {
+			std::cout << "Error: ep2::save_plot" << std::endl;
+		}
+		save_config = config;
+	}
+	// Line Х3
+	{
+        ep2::PlotConfig config;
+		config.file_name = "test-line-x3.ep2";
+		config.name = "test line 2";
+		config.desc = "Your description could be here";
+
+		ep2::PlotConfig::Line line;
+		line.init(100);
+		for(size_t x = 0 ; x < line.w; ++x) {
+            line.data_x[x] = x * 20;
+            line.data_y[x] = 100 + std::sqrt((x - 20) * (x - 20));
+		}
+		line.name = "test line 2";
+		line.desc = "Your description could be here";
+		line.text_x = "X description";
+		line.text_y = "Y description";
+
+		config.add_line(line);
+		config.add_line(line);
+		config.add_line(line);
+
+		if (!ep2::save_plot(config)) {
+			std::cout << "Error: ep2::save_plot" << std::endl;
+		}
+		save_config = config;
+	}
+	// Line Х3 with Time
+	{
+        ep2::PlotConfig config;
+		config.file_name = "test-line-x3-time.ep2";
+		config.name = "test line time";
+		config.desc = "Your description could be here";
+
+		ep2::PlotConfig::Line line;
+		line.init(100);
+		for(size_t x = 0 ; x < line.w; ++x) {
+            line.data_x[x] = x * 3600 * 24 * 365  + 3600 * 24 * 365 * 30;
+            line.data_y[x] = 100 + std::sqrt((x - 20) * (x - 20));
+		}
+		line.name = "test line time";
+		line.desc = "Your description could be here";
+		line.text_x = "X description";
+		line.text_y = "Y description";
+		line.use_scale_time_x = true;
+		line.time_mode_x = ep2::TimeMode::DATE;
+
+		config.add_line(line);
+		config.add_line(line);
+		config.add_line(line);
+
+		if (!ep2::save_plot(config)) {
+			std::cout << "Error: ep2::save_plot" << std::endl;
+		}
+		save_config = config;
+	}
 	return 0;
 }
